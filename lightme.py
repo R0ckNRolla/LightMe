@@ -10,6 +10,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 
 obfuscate_dir = "/tmp/lightme/"
+PORT = 8000
+obfuscate_interval = 200
 
 class bcolors:
     OKBLUE = '\033[94m'
@@ -55,7 +57,7 @@ def obfuscate(script,out_file):
 	cmds = []
 	cmds.append(get_powershell_bin())
 	cmds.append('-C')
-	cmds.append(f'import-module {InvokeObfuscationPath()};$ErrorActionPreference = "SilentlyContinue";Invoke-Obfuscation -ScriptPath {script} -Command "TOKEN,ALL,1" -Quiet | Out-File -Encoding ASCII {out_file}')
+	cmds.append(f' import-module {InvokeObfuscationPath()};$ErrorActionPreference = "SilentlyContinue";Invoke-Obfuscation -ScriptPath {script} -Command "TOKEN,ALL,1" -Quiet | Out-File -Encoding ASCII {out_file}')
 	data = subprocess.Popen(cmds,shell=False)
 	return data,out_file
 
@@ -75,27 +77,32 @@ def obfuscate_random_script(files):
 		obfuscated_file = os.path.join(obfuscate_dir,to_obfuscate['filename'])
 		print_info("[*] obfuscate in background {} to {} ".format(to_obfuscate['filename'], obfuscated_file))
 		popen, data = obfuscate(to_obfuscate['fullpath'], obfuscated_file)
-		time.sleep(200)
+		time.sleep(obfuscate_interval)
 
 
 class LightMeHTTPServer(BaseHTTPRequestHandler):
-    def _set_response(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
+	def _set_response(self):
+		self.send_response(200)
+		self.send_header('Content-type', 'text/plain')
+		self.send_header('Server', 'LightMe')
+		self.end_headers()
 
-    def do_GET(self):
-        self._set_response()
-        if self.path == "/":
-        	self.wfile.write("Lightme")
-        else:
-        	try:
-	        	filename = obfuscate_dir[:-1] + self.path
-	        	with open(filename, 'rb') as fh:
-	        		html = fh.read()
-	        		self.wfile.write(html)
-        	except Exception as e:
-        		self.wfile.write(b"Lightme")
+	def do_GET(self):
+		self._set_response()
+		if self.path == "/":
+			self.wfile.write(b"")
+		else:
+			try:
+				requested_file = obfuscate_dir[:-1] + self.path
+				if not os.path.isfile(requested_file):
+					file_path = base_dir[:-1] + self.path
+				else:
+					file_path = requested_file
+				with open(file_path, 'rb') as file:
+					powershell_file = file.read()
+					self.wfile.write(powershell_file)
+			except Exception as e:
+				self.wfile.write(b"404")
 
 
 def main(base_dir):
@@ -104,12 +111,14 @@ def main(base_dir):
 	if not isdir:
 		print_red("[-] Not Found {}".format(base_dir))
 		exit()
-
 	try:
 		os.rmdir(obfuscate_dir)
+	except OSError as error:
+		pass
+	try:
 		os.mkdir(obfuscate_dir)
 		print_green("[+] Created Dir {}".format(obfuscate_dir)) 
-	except OSError as error: 
+	except OSError as error:
 		pass
 
 	original_powershell_files = getfiles(base_dir)
@@ -128,9 +137,9 @@ def main(base_dir):
 	x = threading.Thread(target=obfuscate_random_script, args=(original_powershell_files,))
 	x.start()
 
-	print_green("[+] starting http server")
+	print_green(f"[+] starting http server {PORT}")
 
-	httpd = HTTPServer(('', 8000), LightMeHTTPServer)
+	httpd = HTTPServer(('', PORT), LightMeHTTPServer)
 	httpd.serve_forever()
 
 
@@ -143,4 +152,5 @@ if __name__ == '__main__':
 			print_red("[*] Closing Lightme")
 			exit()
 	else:
+		print_info(f"using: {sys.argv[0]} scripts_dir/")
 		exit()
