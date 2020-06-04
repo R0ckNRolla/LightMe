@@ -1,0 +1,4 @@
+[submodule "Invoke-Obfuscation"]
+	path = Invoke-Obfuscation
+	url = https://github.com/danielbohannon/Invoke-Obfuscation
+	branch = master
