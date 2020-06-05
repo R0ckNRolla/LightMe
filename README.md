@@ -11,7 +11,7 @@ which giving almost new obfuscated payload with each HTTP request
 - Obfuscate all powershell files within the submitted directory
 - HTTP Server to serve the obfuscated Powershell Files
 - Background Obfuscator
-- Almost new Payload in each request , (depanding on ```python obfuscate_interval```) 
+- Almost new Payload in each request , (depanding on ```obfuscate_interval```) 
 - Powered by [Invoke-Obfuscation](https://github.com/danielbohannon/Invoke-Obfuscation)
 
 ### TODO
