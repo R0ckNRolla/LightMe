@@ -19,14 +19,23 @@ class bcolors:
     FAIL = '\033[91m'
     ENDC = '\033[0m'
 
-def print_info(text):
-    print(bcolors.OKBLUE + str(text) + bcolors.ENDC)
-
 def print_red(text):
     print(bcolors.FAIL + str(text) + bcolors.ENDC)
 
-def print_green(text):
-    print(bcolors.OKGREEN + str(text) + bcolors.ENDC)
+def Logz(string):
+	now = time.time()
+	year, month, day, hh, mm, ss, x, y, z = time.localtime(now)
+
+	weekdayname = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+	monthname = [None,
+					'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+					'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+	s = "%02d/%3s/%04d %02d:%02d:%02d" % (
+			day, monthname[month], year, hh, mm, ss)
+	ll = "%s - [%s] %s\n" % ("LightMe", s, string)
+	sys.stderr.write(bcolors.OKBLUE + ll + bcolors.ENDC)
 
 def get_powershell_bin():
 	def which_powershell():
@@ -43,7 +52,7 @@ def get_powershell_bin():
 	if not powershell_bin:
 		print_red("[*] Powershell not found trying to install .... ")
 		os.system("sudo apt-get install powershell -y")
-		print_info("[*] Start the script again ..")
+		print_red("[*] Start the script again ..")
 		exit()
 	powershell_bin = which_powershell()
 	return powershell_bin
@@ -75,12 +84,15 @@ def obfuscate_random_script(files):
 	while True:
 		to_obfuscate = random.choice(files)
 		obfuscated_file = os.path.join(obfuscate_dir,to_obfuscate['filename'])
-		print_info("[*] obfuscate in background {} to {} ".format(to_obfuscate['filename'], obfuscated_file))
+		Logz("obfuscate in background {} to {} ".format(to_obfuscate['filename'], obfuscated_file))
 		popen, data = obfuscate(to_obfuscate['fullpath'], obfuscated_file)
 		time.sleep(obfuscate_interval)
 
 
 class LightMeHTTPServer(BaseHTTPRequestHandler):
+	def log_request(self, code='-', size='-'):
+		Logz(f'HTTP Request {code} {self.path}')
+
 	def _set_response(self):
 		self.send_response(200)
 		self.send_header('Content-type', 'text/plain')
@@ -117,31 +129,30 @@ def main(base_dir):
 		pass
 	try:
 		os.mkdir(obfuscate_dir)
-		print_green("[+] Created Dir {}".format(obfuscate_dir)) 
+		Logz("Created Dir {}".format(obfuscate_dir)) 
 	except OSError as error:
 		pass
 
 	original_powershell_files = getfiles(base_dir)
 
-	print_green("[*] Loaded Powershell Files {}".format(len(original_powershell_files)))
+	Logz("Loaded Powershell Files {}".format(len(original_powershell_files)))
 
 	for powershell_file in original_powershell_files:
 		obfuscated_file = os.path.join(obfuscate_dir,powershell_file['filename'])
-		print_green("[*] obfuscate {} to {} ".format(powershell_file['filename'], obfuscated_file))
+		Logz("obfuscate {} to {} ".format(powershell_file['filename'], obfuscated_file))
 		popen, data = obfuscate(powershell_file['fullpath'], obfuscated_file)
 		commands.append(popen)
 
-	print_red("[*] waiting for background CalledProcess's")
+	Logz("waiting for background CalledProcess's")
 	time.sleep(20)
 
 	x = threading.Thread(target=obfuscate_random_script, args=(original_powershell_files,))
 	x.start()
 
-	print_green(f"[+] starting http server {PORT}")
+	Logz(f"starting http server {PORT}")
 
 	httpd = HTTPServer(('', PORT), LightMeHTTPServer)
 	httpd.serve_forever()
-
 
 if __name__ == '__main__':
 	if len(sys.argv) > 1:
@@ -149,8 +160,8 @@ if __name__ == '__main__':
 		try:
 			main(base_dir)
 		except KeyboardInterrupt:
-			print_red("[*] Closing Lightme")
+			Logz("Closing Lightme")
 			exit()
 	else:
-		print_info(f"using: {sys.argv[0]} scripts_dir/")
+		print_red(f"using: {sys.argv[0]} scripts_dir/")
 		exit()
