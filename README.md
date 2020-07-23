@@ -20,7 +20,7 @@ which giving almost new obfuscated payload with each HTTP request
 
 ### Install
 ```
-git clone https://github.com/WazeHell/LightMe.git
+git clone --recurse-submodules https://github.com/WazeHell/LightMe
 cd LightMe/
 
 # install powershell
